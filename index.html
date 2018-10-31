@@ -107,7 +107,8 @@ ol{
     <div id="step3" style="display:none;">
       <h4>儲存照片</h4>
       <div id="ans">
-        <a id="download_link" target="_blank"><canvas id="temp_full_canvas"></canvas></a>
+        <canvas id="temp_full_canvas" style="display:none"></canvas>
+        <a id="download_link" target="_blank"><img id="target_image" /></a>
       </div>
     </div>
     <span id="go_back" style="display:none;">從頭開始</span>
@@ -182,7 +183,9 @@ jQuery(function($){
         ctx.drawImage(this, 0, 0 , ctx_s , ctx_s);
       }
 
-      $('#download_link').attr('href' , temp_full_canvas.toDataURL("image/jpeg"));
+      var image_data = temp_full_canvas.toDataURL("image/jpeg");
+      $('#download_link').attr('href' , image_data);
+      $('#target_image').attr('src' , image_data);
 
       console.log(ctx_width , ctx_height , image_width , image_height)
 
