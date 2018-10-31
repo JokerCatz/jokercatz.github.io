@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <title>BitoPro</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="author" content="JokerCatz" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <style>
+html , body , ul , li{
+  padding:0;
+  margin:0;
+}
+html , body , ul , li , h1 , h4{
+  text-align:center;
+}
+ul , ol{
+  margin:0 auto;
+  display: inline-block;
+}
+li{
+  text-align:left;
+}
+ul{
+  list-style: none;
+}
+#img_selector{
+  text-align: center;
+}
+#img_selector li{
+  display:inline-block;
+  cursor: pointer;
+  line-height: 8px;
+}
+#img_selector img{
+  border-radius:10px;
+}
+#img_selector::after{
+  content: '';
+  display: block;
+  clear: both;
+}
+#file_elem{
+  display:none
+}
+#temp_full_canvas{
+  width:100%;
+}
+a{
+  text-decoration: none;
+}
+h1 span{
+  font-size:xx-small;
+}
+#uploader , #go_back{
+  display:inline-block;
+  margin:20px;
+  padding:20px;
+  max-width: 180px;
+  border-radius:20px;
+  cursor: pointer;
+}
+#uploader{
+  background:#ccf;
+}
+#go_back{
+  background:#ffc;
+}
+h1{
+  border: 1px #ccc solid;
+  padding:10px;
+  margin:10px;
+  border-radius:10px;
+}
+h4{
+  font-weight:normal;
+}
+h5{
+  border-bottom: 1px #ccc dashed;
+  border-top: 1px #ccc dashed;
+  padding:4px;
+  margin-bottom:4px;
+}
+ol{
+  font-size:13px;
+}
+    </style>
+  </head>
+  <body>
+    <h1>Kevin<span>照片</span>合成器</h1>
+    <div id="step1">
+      <input type="file" id="file_elem" accept="image/*"/>
+      <div id="uploader">
+        點我上傳基本照片
+      </div>
+    </div>
+    <div id="step2" style="display:none;">
+      <h4>請選擇你想要的 kevin</h4>
+      <ul id="img_selector">
+        <li data-source="./01.png"><img src="./01.jpg"/></li>
+        <li data-source="./02.png"><img src="./02.jpg"/></li>
+        <li data-source="./03.png"><img src="./03.jpg"/></li>
+        <li data-source="./04.png"><img src="./04.jpg"/></li>
+        <li data-source="./05.png"><img src="./05.jpg"/></li>
+        <li data-source="./06.png"><img src="./06.jpg"/></li>
+      </ul>
+    </div>
+    <div id="step3" style="display:none;">
+      <h4>成果（點擊或另存原圖）</h4>
+      <div id="ans">
+        <a id="download_link"><canvas id="temp_full_canvas"></canvas></a>
+      </div>
+    </div>
+    <span id="go_back" style="display:none;">從頭開始</span>
+    <h5>附註</h5>
+    <ol>
+      <li>處理在瀏覽器完成，並無上傳散佈 Kevin 的動作</li>
+      <li>比例符合原始 Kevin 的拍照尺寸，無法調整大小</li>
+      <li>因版權因素，完成必須請給 Kevin 重新確認效果</li>
+    </ol>
+    <img id="upload_image" crossOrigin="Anonymous" style="display:none;" />
+    <script src="./jquery.js"></script>
+    <script>
+var step = 0;
+var draw_original = function(){
+  var img = $('#upload_image')[0];
+  var temp_full_canvas = $("#temp_full_canvas")[0];
+  temp_full_canvas.width = img.naturalWidth;
+  temp_full_canvas.height = img.naturalHeight;
+  var ctx = temp_full_canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0);
+  if(step == 0){
+    step = 1;
+    $('#step1 , #step3').hide();
+    $('#step2 , #go_back').show();
+  }
+};
+
+jQuery(function($){
+  $('#go_back').click(function(){
+    step = 0;
+    $('#step2 , #step3 , #go_back').hide();
+    $('#step1').show();
+  });
+  $('#uploader').click(function(){
+    console.log(2);
+    $('#file_elem').click();
+  });
+  $('#file_elem').change(function(){
+    var files = $(this)[0].files;
+    console.log(files)
+    if (!files.length) {
+      alert("沒有讀取到任何檔案");
+    } else {
+      var img = $('#upload_image')[0];
+      img.src = window.URL.createObjectURL(files[0]);
+      img.onerror = function(){
+        alert("檔案讀取錯誤");
+      }
+      img.onload = draw_original;
+      console.log(files[0].name + ": " + files[0].size + " bytes");
+    }
+  });
+  $('#img_selector li').click(function(){
+    var kevin_img = new Image();
+    kevin_img.crossOrigin = "Anonymous";
+    kevin_img.src = $(this).attr('data-source');
+    kevin_img.onload = function(){
+      draw_original();
+      var temp_full_canvas = $("#temp_full_canvas")[0];
+      var ctx = temp_full_canvas.getContext("2d");
+      var ctx_width = temp_full_canvas.width;
+      var ctx_height = temp_full_canvas.height;
+      var image_width = this.width;
+      var image_height = this.height;
+
+      var ctx_s = ctx_width < ctx_height ? ctx_width : ctx_height;
+      var image_s = image_width < image_height ? image_width : image_height;
+
+      if(ctx_width < ctx_height){ // H 要算 top offset
+        ctx.drawImage(this, 0 , ctx_height - ctx_s , ctx_s , ctx_s);
+      }else{ // V 只算 zoom
+        ctx.drawImage(this, 0, 0 , ctx_s , ctx_s);
+      }
+
+      $('#download_link').attr('href' , temp_full_canvas.toDataURL("image/jpeg"));
+
+      console.log(ctx_width , ctx_height , image_width , image_height)
+
+      if(step === 1){
+        step = 2;
+        $('#step1 , #step2').hide();
+        $('#step3 , #go_back').show();
+      }
+    };
+  });
+});
+    </script>
+  </body>
+</html>
+
