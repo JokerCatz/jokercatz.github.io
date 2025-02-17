@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>sign_verify</title>
+        <style>
+body *{
+    font-family: monospace;
+}
+#loading{
+    display:block;
+    background: #fcc;
+    text-align: center;
+    padding:10px;
+}
+table{
+    margin: 20px auto;
+    border: 1px #ccc solid;
+}
+table button{
+    width:120px;
+    cursor: pointer;
+}
+table input{
+    width:360px;
+}
+table textarea{
+    width:360px;
+    min-height: 120px;
+}
+h1, div{
+    text-align: center;
+}
+        </style>
+    </head>
+    <body>
+        <h1>sign verify</h1>
+        <span id="loading">Loading ...</span>
+        <table>
+            <tr>
+                <th>item & action</th><th>val</th>
+            </tr>
+            <tr>
+                <th><button id="action_keygen">keygen</button></th>
+                <td><textarea id="action_keygen_ans" alt="result" title="result">--result--</textarea></td>
+            </tr>
+            <tr>
+                <th><button id="action_signMsg">signMessage</button></th>
+                <td>
+                    <input type="text" id="action_signMsg_source" value="--source--"></input><br/>
+                    <textarea id="action_signMsg_ans" alt="result" title="result">--result--</textarea>
+                </td>
+            </tr>
+            <tr>
+                <th><button id="action_getSignMsgWallet"> get signedMessage Wallet</button></th>
+                <td><textarea id="action_getSignMsgWallet_ans" alt="result" title="result">--result--</textarea></td>
+            </tr>
+        </table>
+
+        <div>
+            v202502080312
+        </div>
+        <!-- JS part --->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/4.16.0/web3.min.js"></script>
+        <script src="./jquery.js"></script>
+        <script>
+var isAddrMatch = function(a,b){
+    return (a + "").toLowerCase() === (b + "").toLowerCase();
+};
+$("#action_keygen").click(function(){
+    try {
+        var wallet = web3.eth.accounts.create();
+        $('#action_keygen_ans').val(JSON.stringify({
+            "wallet" : wallet.address,
+            "privateKey" : wallet.privateKey,
+        }));
+    } catch (e) {
+        $('#action_keygen_ans').val("!!ERR!!");
+        console.error(e);
+    }
+});
+
+$("#action_signMsg").click(function(){
+    try {
+        var walletKeypair = JSON.parse($('#action_keygen_ans').val());
+        var wallet = web3.eth.accounts.privateKeyToAccount(walletKeypair.privateKey);
+        if(!isAddrMatch(walletKeypair.wallet, wallet.address)){
+            $('#action_signMsg_ans').val("!!wallet not match privateKey!!");
+            return;
+        }
+        var sourceMsg = $("#action_signMsg_source").val();
+        var signatureInfo = wallet.sign(sourceMsg);
+
+        // verify
+        var recoverSigner = web3.eth.accounts.recover(sourceMsg, signatureInfo.signature);
+        if(!isAddrMatch(recoverSigner, wallet.address)) {
+            $('#action_signMsg_ans').val("!!self signer check failed!!");
+            return;
+
+        }
+        $('#action_signMsg_ans').val(JSON.stringify({
+            "message" : sourceMsg,
+            "wallet" : wallet.address,
+            "signer" : recoverSigner,
+            "signature" : signatureInfo.signature,
+        }));
+    } catch (e) {
+        $('#action_signMsg_ans').val("!!ERR!!");
+        console.error(e);
+    }
+});
+
+$("#action_getSignMsgWallet").click(function(){
+    try {
+        var signInfo = JSON.parse($('#action_signMsg_ans').val());
+
+        // verify
+        var recoverSigner = web3.eth.accounts.recover(signInfo.message, signInfo.signature);
+        if(!isAddrMatch(recoverSigner, signInfo.signer)) {
+            $('#action_getSignMsgWallet_ans').val("!!signer check failed!!");
+            return;
+        }
+        $('#action_getSignMsgWallet_ans').val(JSON.stringify({
+            "status" : "OK & CHECKED !!",
+            "timestamp" : Date.now()
+        }));
+    } catch (e) {
+        $('#action_getSignMsgWallet_ans').val("!!ERR!!");
+        console.error(e);
+    }
+});
+
+window.web3 = new Web3('https://127.0.0.1/'); // skip no provider warning
+$('#loading').remove();
+        </script>
+    </body>
+</html>
